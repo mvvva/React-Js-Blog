@@ -13,85 +13,105 @@ import { format } from "date-fns";
 function App() {
   const [posts, setPosts] = useState([
     {
-      id: 1,
-      title: "My First Post",
-      datetime: "July 01, 2021 11:17:36 AM",
-      body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
+        id: 1,
+        title: "My First Post",
+        datetime: "July 01, 2021 11:17:36 AM",
+        body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
     },
     {
-      id: 2,
-      title: "My 2nd Post",
-      datetime: "July 01, 2021 11:17:36 AM",
-      body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
+        id: 2,
+        title: "My 2nd Post",
+        datetime: "July 01, 2021 11:17:36 AM",
+        body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
     },
     {
-      id: 3,
-      title: "My 3rd Post",
-      datetime: "July 01, 2021 11:17:36 AM",
-      body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
+        id: 3,
+        title: "My 3rd Post",
+        datetime: "July 01, 2021 11:17:36 AM",
+        body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
     },
     {
-      id: 4,
-      title: "My Fourth Post",
-      datetime: "July 01, 2021 11:17:36 AM",
-      body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
+        id: 4,
+        title: "My Fourth Post",
+        datetime: "July 01, 2021 11:17:36 AM",
+        body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis consequatur expedita, assumenda similique non optio! Modi nesciunt excepturi corrupti atque blanditiis quo nobis, non optio quae possimus illum exercitationem ipsa!",
     },
-  ]);
-  const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [postTitle, setPostTitle] = useState("");
-  const [postBody, setPostBody] = useState("");
-  const navigate = useNavigate();
+]);
+    const [search, setSearch] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [postTitle, setPostTitle] = useState("");
+    const [postBody, setPostBody] = useState("");
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const filteredPosts = posts.filter((post) => {
-      if (
-        post.title.toUpperCase().includes(search.toUpperCase()) ||
-        post.body.toUpperCase().includes(search.toUpperCase())
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    });
+    useEffect(() => {
+        const filteredPosts = posts.filter((post) => {
+            return (
+                post.title.toUpperCase().includes(search.toUpperCase()) ||
+                post.body.toUpperCase().includes(search.toUpperCase())
+            );
+        });
 
-    setSearchResults(filteredPosts);
-  }, [posts, search]);
+        setSearchResults(filteredPosts);
+    }, [posts, search]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const id = posts.length ? posts[posts.length - 1].id + 1 : 1;
-    const datetime = format(new Date(), "MMMM dd, yyyy pp");
-    const newPost = { id, title: postTitle, datetime, body: postBody };
-  };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const id = posts.length ? posts[posts.length - 1].id + 1 : 1;
+        const datetime = format(new Date(), "MMMM dd, yyyy pp");
+        const newPost = { id, title: postTitle, datetime, body: postBody };
+        setPosts([...posts, newPost]);
+        setPostTitle("");
+        setPostBody("");
+        navigate("/");
+    };
 
-  const handleDelete = (id) => {};
+    const handleDelete = (id) => {
+        const deletedPost = posts.filter(post => post.id !== id);
+        setPosts(deletedPost);
+        navigate('/');
+    };
 
-  return (
-    <div className='App'>
-      <Header title='React JS Blog' />
-      <Nav search={search} setSearch={setSearch} />
-      <Routes>
-        <Route path='/' element={<Home posts={searchResults} />} />
-        <Route
-          path='/post'
-          element={
-            <NewPost
-              handleSubmit={handleSubmit}
-              postTitle={postTitle}
-              setPostTitle={setPostTitle}
-              postBody={postBody}
-              setPostBody={setPostBody}
-            />
-          }
-        />
-        <Route path='/post/:id' element={<PostPage posts={posts} />} />
-        <Route path='/about' element={<About />} />
-        <Route path='*' element={<Missing />} />
-      </Routes>
-      <Footer />
-    </div>
-  );
+    const handleEditSubmit = (id, updatedTitle, updatedBody) => {
+        const updatedPosts = posts.map(post =>
+            post.id === id ? { ...post, title: updatedTitle, body: updatedBody } : post
+        );
+        setPosts(updatedPosts);
+    };
+
+    return (
+        <div className='App'>
+            <Header title='React JS Blog' />
+            <Nav search={search} setSearch={setSearch} />
+            <Routes>
+                <Route path='/' element={<Home posts={searchResults} />} />
+                <Route
+                    path='/post'
+                    element={
+                        <NewPost
+                            handleSubmit={handleSubmit}
+                            postTitle={postTitle}
+                            setPostTitle={setPostTitle}
+                            postBody={postBody}
+                            setPostBody={setPostBody}
+                        />
+                    }
+                />
+                <Route 
+                    path='/post/:id' 
+                    element={
+                        <PostPage 
+                            posts={posts} 
+                            handleDelete={handleDelete}
+                            handleEditSubmit={handleEditSubmit}
+                        />
+                    } 
+                />
+                <Route path='/about' element={<About />} />
+                <Route path='*' element={<Missing />} />
+            </Routes>
+            <Footer />
+        </div>
+    );
 }
 
 export default App;

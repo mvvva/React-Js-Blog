@@ -19,7 +19,7 @@ const Nav = ({ search, setSearch }) => {
                 <li><Link to="/about">About</Link></li>
             </ul>
         </nav>
-    )
+    );
 }
 
-export default Nav
+export default Nav;
