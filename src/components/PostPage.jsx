@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
     const { id } = useParams();
@@ -8,6 +8,13 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(post ? post.title : "");
     const [editBody, setEditBody] = useState(post ? post.body : "");
+
+    useEffect(() => {
+        if (post) {
+            setEditTitle(post.title);
+            setEditBody(post.body);
+        }
+    }, [post]);
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -21,7 +28,7 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
     return (
         <main className="PostPage">
             <article className="post">
-                {post && (
+                {post ? (
                     <>
                         {isEditing ? (
                             <>
@@ -64,7 +71,7 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
                                     Delete Post
                                 </button>
                                 <button
-                                    style={{ background: '#FFD700', color: 'black', marginLeft:'15px' }}
+                                    style={{ background: '#FFD700', color: 'black', marginLeft: '15px' }}
                                     onClick={handleEdit}
                                 >
                                     Edit Post
@@ -72,8 +79,7 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
                             </>
                         )}
                     </>
-                )}
-                {!post && (
+                ) : (
                     <>
                         <h2>Post Not Found</h2>
                         <p>Well, that's disappointing.</p>
