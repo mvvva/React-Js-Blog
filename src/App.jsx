@@ -9,6 +9,7 @@ import Missing from "./components/Missing";
 import { Routes, useNavigate, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import axios from "axios";
 
 function App() {
     const [posts, setPosts] = useState([]);
@@ -18,15 +19,10 @@ function App() {
     const [searchResults, setSearchResults] = useState([]);
     const [postTitle, setPostTitle] = useState("");
     const [postBody, setPostBody] = useState("");
-    const [deleting, setDeleting] = useState(false)
-    const [creating, setCreating] = useState(false)
-    const [editing, setEditing] = useState(false)
+    const [creating, setCreating] = useState(false);
     const navigate = useNavigate();
 
-
-    const base_url = import.meta.env.VITE_BASE_URL
-
-
+    const base_url = import.meta.env.VITE_BASE_URL;
 
     useEffect(() => {
         async function fetchPosts() {
@@ -34,12 +30,8 @@ function App() {
             setError(null);
 
             try {
-                const response = await fetch(`${base_url}/posts`);
-                if (!response.ok) {
-                    throw new Error("Network response was not ok!");
-                }
-                const fetchedPosts = await response.json();
-                setPosts(fetchedPosts);
+                const response = await axios.get(`${base_url}/posts`);
+                setPosts(response.data);
             } catch (error) {
                 console.error(error.message);
                 setError("Error fetching posts: " + error.message);
@@ -52,98 +44,54 @@ function App() {
     }, []);
 
     useEffect(() => {
-      if (posts.length > 0) {
-          const filteredPosts = posts.filter((post) => {
-              return (
-                  post.title.toUpperCase().includes(search.toUpperCase()) ||
-                  post.body.toUpperCase().includes(search.toUpperCase())
-              );
-          });
-          setSearchResults(filteredPosts);
-      }
-  }, [posts, search]);
-  
+        if (posts.length > 0) {
+            const filteredPosts = posts.filter((post) => {
+                return (
+                    post.title.toUpperCase().includes(search.toUpperCase()) ||
+                    post.body.toUpperCase().includes(search.toUpperCase())
+                );
+            });
+            setSearchResults(filteredPosts);
+        }
+    }, [posts, search]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setCreating (true)
+        setCreating(true);
         const id = posts.length ? String(Number(posts[posts.length - 1].id) + 1) : 1;
         const datetime = format(new Date(), "MMMM dd, yyyy pp");
         const newPost = { id, title: postTitle, datetime, body: postBody };
         try {
-          const response = await fetch(`${base_url}/posts`, {
-            method: 'POST',
-            headers:{
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(newPost)
-          })
-          const newPosts = [newPost, ...posts];
-          setPosts(newPosts);
-
-          setPostTitle("");
-          setPostBody("");
-          navigate("/");
-          
-        }finally{
-          setCreating(false)
+            const response = await axios.post(`${base_url}/posts`, newPost);
+            setPosts([response.data, ...posts]);
+            setPostTitle("");
+            setPostBody("");
+            navigate("/");
+        } catch (error) {
+            console.error("Error creating post:", error.message);
+        } finally {
+            setCreating(false);
         }
-        setPosts([...posts, newPost]);
-        setPostTitle("");
-        setPostBody("");
-        navigate("/");
     };
 
     const handleDelete = async (id) => {
-      setDeleting(true)
         try {
-          const response = await fetch(`${base_url}/posts/${id}`,{
-            method: 'DELETE'
-          })
-          const filteredPosts = posts.filter(post => post.id !== id)
-          setPosts(filteredPosts);
+            await axios.delete(`${base_url}/posts/${id}`);
+            const filteredPosts = posts.filter(post => post.id !== id);
+            setPosts(filteredPosts);
+            navigate('/');
         } catch (error) {
-          
-        }finally{
-          setDeleting(false)
+            console.error("Error deleting post:", error.message);
+            setError("Error deleting post: " + error.message);
         }
-
-        navigate('/');
     };
-
-    const handleEditSubmit = async (id, updatedTitle, updatedBody) => {
-      setEditing(true);
-      try {
-          const response = await fetch(`${base_url}/posts/${id}`, {
-              method: 'PUT',
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ title: updatedTitle, body: updatedBody }),
-          });
-          if (!response.ok) {
-              throw new Error("Network response was not ok!");
-          }
-          const updatedPost = { id, title: updatedTitle, body: updatedBody };
-          const updatedPosts = posts.map(post =>
-              post.id === id ? updatedPost : post
-          );
-          setPosts(updatedPosts);
-          navigate('/');
-      } catch (error) {
-          console.error("Error updating post:", error.message);
-      } finally {
-          setEditing(false);
-      }
-  };
-  
 
     return (
         <div className='App'>
             <Header title='React JS Blog' />
             <Nav search={search} setSearch={setSearch} />
             {fetching && <p>Loading...</p>}
-            {error && <p style={{color: "red"}}>Error: {error}</p>}
+            {error && <p style={{ color: "red" }}>Error: {error}</p>}
             <Routes>
                 <Route path='/' element={<Home posts={searchResults} />} />
                 <Route
@@ -159,16 +107,15 @@ function App() {
                         />
                     }
                 />
-                <Route 
-                    path='/post/:id' 
+                <Route
+                    path='/post/:id'
                     element={
-                        <PostPage 
-                            loading={editing}
-                            posts={posts} 
+                        <PostPage
+                            setPosts={setPosts}
+                            posts={posts}
                             handleDelete={handleDelete}
-                            handleEditSubmit={handleEditSubmit}
                         />
-                    } 
+                    }
                 />
                 <Route path='/about' element={<About />} />
                 <Route path='*' element={<Missing />} />

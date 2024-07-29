@@ -1,13 +1,18 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
-const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
+const PostPage = ({ setPosts, posts, handleDelete }) => {
     const { id } = useParams();
     const post = posts.find(post => (post.id).toString() === id);
-
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(post ? post.title : "");
     const [editBody, setEditBody] = useState(post ? post.body : "");
+    const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError] = useState(null);
+    const base_url = import.meta.env.VITE_BASE_URL;
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (post) {
@@ -17,16 +22,51 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
     }, [post]);
 
     const handleEdit = () => {
-        setIsEditing(true);
-    }
+        if (isEditing) {
+            handleSave();
+        } else {
+            setIsEditing(true);
+        }
+    };
 
-    const handleSave = () => {
-        handleEditSubmit(post.id, editTitle, editBody);
-        setIsEditing(false);
-    }
+    const handleSave = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            await axios.put(`${base_url}/posts/${post.id}`, {
+                title: editTitle,
+                body: editBody
+            });
+
+            const updatedPost = { id: post.id, title: editTitle, body: editBody };
+            const updatedPosts = posts.map(p => (p.id === id ? updatedPost : p));
+            setPosts(updatedPosts);
+            setIsEditing(false);
+        } catch (error) {
+            setError("Error updating post: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeletePost = async (postId) => {
+        setDeleting(true);
+        setError(null);
+        try {
+            await axios.delete(`${base_url}/posts/${postId}`);
+            const filteredPosts = posts.filter(post => post.id !== postId);
+            setPosts(filteredPosts);
+            navigate('/');
+        } catch (error) {
+            setError("Error deleting post: " + error.message);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     return (
         <main className="PostPage">
+            {error && <p style={{ color: "red" }}>{error}</p>}
             <article className="post">
                 {post ? (
                     <>
@@ -55,29 +95,28 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
                                         resize: 'vertical'
                                     }}
                                 />
-                                <button 
-                                    onClick={handleSave} 
-                                    style={{ background: '#007BFF', color: 'white' }}
-                                >
-                                    Save
-                                </button>
                             </>
                         ) : (
                             <>
                                 <h2>{post.title}</h2>
                                 <p className="postDate">{post.datetime}</p>
                                 <p className="postBody">{post.body}</p>
-                                <button onClick={() => handleDelete(post.id)}>
-                                    Delete Post
-                                </button>
-                                <button
-                                    style={{ background: '#FFD700', color: 'black', marginLeft: '15px' }}
-                                    onClick={handleEdit}
-                                >
-                                    Edit Post
-                                </button>
                             </>
                         )}
+                        <button
+                            onClick={handleEdit}
+                            style={{ background: isEditing ? '#007BFF' : '#FFD700', color: 'white' }}
+                            disabled={loading || deleting}
+                        >
+                            {loading ? 'Saving...' : isEditing ? 'Save' : 'Edit Post'}
+                        </button>
+                        <button
+                            onClick={() => handleDeletePost(post.id)}
+                            style={{ background: deleting ? '#FF6347' : '#FF6347', color: 'white', marginLeft: '15px' }}
+                            disabled={deleting || loading}
+                        >
+                            {deleting ? 'Deleting...' : 'Delete Post'}
+                        </button>
                     </>
                 ) : (
                     <>
@@ -91,6 +130,6 @@ const PostPage = ({ posts, handleDelete, handleEditSubmit }) => {
             </article>
         </main>
     );
-}
+};
 
 export default PostPage;
